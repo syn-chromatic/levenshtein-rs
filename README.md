@@ -1,4 +1,4 @@
-# levenshtein-rust
+# levenshtein-rs
 Compute operational differences between two sequences using the Levenshtein algorithm. 
 
 ___
