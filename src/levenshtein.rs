@@ -46,8 +46,8 @@ impl Levenshtein {
     }
 
     fn get_min_ops(&self, ops: [[i32; 4]; 3]) -> [i32; 4] {
-        let mut min_ops: [i32; 4] = [0, 0, 0, 0];
-        let mut min_ops_initialized = false;
+        let mut min_ops: [i32; 4] = [0; 4];
+        let mut min_ops_initialized: bool = false;
 
         for op in ops.iter() {
             if op[0] >= 0 && op[1] >= 0 {
