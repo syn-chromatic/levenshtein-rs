@@ -1,7 +1,7 @@
 use levenshtein::Levenshtein;
 use levenshtein::Results;
 
-const SEQ1: &str = "energy";
+const SEQ1: &str = "test";
 const SEQ2: &str = "text";
 
 #[test]
