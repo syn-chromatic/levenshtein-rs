@@ -1,80 +1,224 @@
-struct Levenshtein {
-    seq1: String,
-    seq2: String,
+pub struct Results {
+    distance: i32,
+    sequence: Vec<Vec<i32>>,
 }
 
-impl Levenshtein {
-    pub fn new(seq1: &str, seq2: &str) -> Levenshtein {
-        let seq1: String = seq1.to_string();
-        let seq2: String = seq2.to_string();
-        Levenshtein { seq1, seq2 }
+impl Results {
+    pub fn new(distance: i32, sequence: Vec<Vec<i32>>) -> Self {
+        Self { distance, sequence }
     }
 
     pub fn distance(&self) -> i32 {
-        let seq1: &str = self.seq1.as_str();
-        let seq2: &str = self.seq2.as_str();
-        let (_, distance): (Vec<Vec<i32>>, i32) = self.calculate_distance(seq1, seq2);
-        distance
+        self.distance
     }
 
-    pub fn sequence_array(&self) -> Vec<Vec<i32>> {
-        let seq1: &str = self.seq1.as_str();
-        let seq2: &str = self.seq2.as_str();
-        let (seq_array, _): (Vec<Vec<i32>>, i32) = self.calculate_distance(seq1, seq2);
-        seq_array
+    pub fn sequence(&self) -> &Vec<Vec<i32>> {
+        &self.sequence
+    }
+}
+
+pub struct Position {
+    x: i32,
+    y: i32,
+}
+
+impl Position {
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
+pub struct Mapping {
+    length: (usize, usize),
+    sequence: Vec<Vec<i32>>,
+    lookup: Vec<Vec<(usize, char)>>,
+}
+
+impl Mapping {
+    fn proc_sequence(seq: &str) -> Vec<char> {
+        std::iter::once('\0').chain(seq.chars()).collect()
     }
 
-    fn calculate_distance(&self, seq1: &str, seq2: &str) -> (Vec<Vec<i32>>, i32) {
-        let (mut seq_array, seq_lookup): (Vec<Vec<i32>>, Vec<Vec<(usize, char)>>) =
-            self.get_sequence_array(&seq1, &seq2);
+    fn proc_lookup(lookup: &mut Vec<Vec<(usize, char)>>, seq: &Vec<char>) {
+        let mut char_lookup: Vec<(usize, char)> = Vec::with_capacity(seq.len());
+        for (l_index, &letter) in seq.iter().enumerate() {
+            char_lookup.push((l_index, letter));
+        }
+        lookup.push(char_lookup);
+    }
+}
 
-        let ops_costs: [i32; 5] = [0, 0, 1, 1, 1];
+impl Mapping {
+    pub fn new(seq1: &str, seq2: &str) -> Self {
+        let seq1: Vec<char> = Self::proc_sequence(seq1);
+        let seq2: Vec<char> = Self::proc_sequence(seq2);
+        let length: (usize, usize) = (seq1.len(), seq2.len());
 
-        let seq1_len: usize = seq1.len() + 1;
-        let seq2_len: usize = seq2.len() + 1;
+        let sequence: Vec<Vec<i32>> = vec![vec![0; length.0]; length.1];
+        let mut lookup: Vec<Vec<(usize, char)>> = Vec::with_capacity(2);
 
-        for x in 0..(seq1_len) as i32 {
-            for y in 0..(seq2_len) as i32 {
-                let op_values: [i32; 4] =
-                    self.dynamic_operations(x, y, &seq_array, &seq_lookup, seq1_len, seq2_len);
-                let op_value: i32 = op_values[2];
-                let op_key: i32 = op_values[3];
-                let op_cost: i32 = ops_costs[op_key as usize];
-                seq_array[y as usize][x as usize] = op_value + op_cost;
+        Self::proc_lookup(&mut lookup, &seq1);
+        Self::proc_lookup(&mut lookup, &seq2);
+
+        Self {
+            length,
+            sequence,
+            lookup,
+        }
+    }
+
+    pub fn distance(&self) -> i32 {
+        let (l1, l2): (usize, usize) = self.length;
+        self.sequence[l2 - 1][l1 - 1]
+    }
+
+    pub fn value(&self, position: &Position) -> i32 {
+        let (x, y) = (position.x, position.y);
+        if x >= 0 && y >= 0 {
+            return self.sequence[y as usize][x as usize];
+        }
+        0
+    }
+
+    pub fn insert_position(&self, x: i32, y: i32) -> Position {
+        if self.length.0 < self.length.1 {
+            return Position::new(x, y - 1);
+        }
+        Position::new(x - 1, y)
+    }
+
+    pub fn replace_position(&self, x: i32, y: i32) -> Position {
+        Position::new(x - 1, y - 1)
+    }
+
+    pub fn delete_position(&self, x: i32, y: i32) -> Position {
+        if self.length.0 < self.length.1 {
+            return Position::new(x - 1, y);
+        }
+        Position::new(x, y - 1)
+    }
+
+    pub fn onset_array(&self) -> [i32; 4] {
+        [0, 0, 0, 0]
+    }
+
+    pub fn match_array(&self, replace: &Position) -> [i32; 4] {
+        let value: i32 = self.value(replace);
+        [replace.x, replace.y, value, 1]
+    }
+
+    pub fn insert_array(&self, insert: &Position) -> [i32; 4] {
+        let value: i32 = self.value(insert);
+        [insert.x, insert.y, value, 2]
+    }
+
+    pub fn replace_array(&self, replace: &Position) -> [i32; 4] {
+        let value: i32 = self.value(replace);
+        [replace.x, replace.y, value, 3]
+    }
+
+    pub fn delete_array(&self, delete: &Position) -> [i32; 4] {
+        let value: i32 = self.value(delete);
+        [delete.x, delete.y, value, 4]
+    }
+}
+
+pub struct Costs {
+    on_set: i32,
+    on_match: i32,
+    on_insert: i32,
+    on_replace: i32,
+    on_delete: i32,
+}
+
+impl Costs {
+    pub fn new() -> Self {
+        let on_set: i32 = 0;
+        let on_match: i32 = 0;
+        let on_insert: i32 = 1;
+        let on_replace: i32 = 1;
+        let on_delete: i32 = 1;
+
+        Self {
+            on_set,
+            on_match,
+            on_insert,
+            on_replace,
+            on_delete,
+        }
+    }
+
+    pub fn set_insert(&mut self, value: i32) {
+        self.on_insert = value;
+    }
+
+    pub fn set_replace(&mut self, value: i32) {
+        self.on_replace = value;
+    }
+
+    pub fn set_delete(&mut self, value: i32) {
+        self.on_delete = value;
+    }
+
+    pub fn as_slice(&self) -> [i32; 5] {
+        let slice: [i32; 5] = [
+            self.on_set,
+            self.on_match,
+            self.on_insert,
+            self.on_replace,
+            self.on_delete,
+        ];
+        slice
+    }
+}
+
+struct Levenshtein {
+    costs: Costs,
+}
+
+impl Levenshtein {
+    pub fn new() -> Levenshtein {
+        let costs: Costs = Costs::new();
+
+        Levenshtein { costs }
+    }
+
+    pub fn costs(&mut self) -> &mut Costs {
+        &mut self.costs
+    }
+
+    pub fn calculate(&self, seq1: &str, seq2: &str) -> Results {
+        let ops: Mapping = self.calculate_distance(seq1, seq2);
+        let distance: i32 = ops.distance();
+        let sequence: Vec<Vec<i32>> = ops.sequence;
+        let results: Results = Results::new(distance, sequence);
+        results
+    }
+}
+
+impl Levenshtein {
+    fn calculate_distance(&self, seq1: &str, seq2: &str) -> Mapping {
+        let mut map: Mapping = Mapping::new(seq1, seq2);
+        let costs: [i32; 5] = self.costs.as_slice();
+
+        for x in 0..(map.length.0) as i32 {
+            for y in 0..(map.length.1) as i32 {
+                let values: [i32; 4] = self.dynamic_operations(x, y, &map);
+                let value: i32 = values[2];
+                let key: i32 = values[3];
+                let cost: i32 = costs[key as usize];
+                map.sequence[y as usize][x as usize] = value + cost;
             }
         }
-        let dist_val: i32 = seq_array[seq2_len - 1][seq1_len - 1];
-        (seq_array, dist_val)
+
+        map
     }
 
-    fn get_sequence_array(
-        &self,
-        seq1: &str,
-        seq2: &str,
-    ) -> (Vec<Vec<i32>>, Vec<Vec<(usize, char)>>) {
-        let seq1_c: Vec<char> = std::iter::once('\0').chain(seq1.chars()).collect();
-        let seq2_c: Vec<char> = std::iter::once('\0').chain(seq2.chars()).collect();
-
-        let seq_arr: Vec<Vec<i32>> = vec![vec![0; seq1_c.len()]; seq2_c.len()];
-        let mut seq_lookup: Vec<Vec<(usize, char)>> = Vec::with_capacity(2);
-
-        for s_index in 0..2 {
-            let seq: &Vec<char> = if s_index == 0 { &seq1_c } else { &seq2_c };
-            let mut lookup = Vec::with_capacity(seq.len());
-            for (l_index, &letter) in seq.iter().enumerate() {
-                lookup.push((l_index, letter));
-            }
-            seq_lookup.push(lookup);
-        }
-
-        (seq_arr, seq_lookup)
-    }
-
-    fn get_min_ops(&self, ops_array: [[i32; 4]; 3]) -> [i32; 4] {
+    fn get_min_ops(&self, ops: [[i32; 4]; 3]) -> [i32; 4] {
         let mut min_ops: [i32; 4] = [0, 0, 0, 0];
         let mut min_ops_initialized = false;
 
-        for op in ops_array.iter() {
+        for op in ops.iter() {
             if op[0] >= 0 && op[1] >= 0 {
                 if !min_ops_initialized {
                     min_ops = *op;
@@ -91,76 +235,49 @@ impl Levenshtein {
         min_ops
     }
 
-    fn get_insert(&self, x: i32, y: i32, seq1_len: usize, seq2_len: usize) -> (i32, i32) {
-        if seq1_len < seq2_len {
-            return (x, y - 1);
-        }
-        (x - 1, y)
-    }
-
-    fn get_replace(&self, x: i32, y: i32) -> (i32, i32) {
-        (x - 1, y - 1)
-    }
-
-    fn get_delete(&self, x: i32, y: i32, seq1_len: usize, seq2_len: usize) -> (i32, i32) {
-        if seq1_len < seq2_len {
-            return (x - 1, y);
-        }
-        (x, y - 1)
-    }
-
-    fn get_value(&self, x: i32, y: i32, seq_array: &Vec<Vec<i32>>) -> i32 {
-        if x >= 0 && y >= 0 {
-            return seq_array[y as usize][x as usize];
-        }
-        0
-    }
-
-    fn dynamic_operations(
+    fn get_operations_array(
         &self,
-        x: i32,
-        y: i32,
-        seq_array: &Vec<Vec<i32>>,
-        seq_lookup: &Vec<Vec<(usize, char)>>,
-        seq1_len: usize,
-        seq2_len: usize,
+        char1: char,
+        char2: char,
+        map: &Mapping,
+        insert: Position,
+        replace: Position,
+        delete: Position,
     ) -> [i32; 4] {
-        let (_, char1): (usize, char) = seq_lookup[0][x as usize];
-        let (_, char2): (usize, char) = seq_lookup[1][y as usize];
-
-        let (x_ins, y_ins): (i32, i32) = self.get_insert(x, y, seq1_len, seq2_len);
-        let (x_rep, y_rep): (i32, i32) = self.get_replace(x, y);
-        let (x_del, y_del): (i32, i32) = self.get_delete(x, y, seq1_len, seq2_len);
-
-        let ins_val: i32 = self.get_value(x_ins, y_ins, seq_array);
-        let rep_val: i32 = self.get_value(x_rep, y_rep, seq_array);
-        let del_val: i32 = self.get_value(x_del, y_del, seq_array);
-
-        let onset_state: bool = x_rep + y_rep == -2;
+        let onset_state: bool = replace.x + replace.y == -2;
         let match_state: bool = char1 == char2;
-        let op_array: [i32; 4];
 
         if onset_state {
-            op_array = [0, 0, 0, 0] // x, y, val, onset;
+            return map.onset_array();
         } else if match_state {
-            op_array = [x_rep, y_rep, rep_val, 1] // x, y, val, match;
-        } else {
-            let ops_array: [[i32; 4]; 3] = [
-                [x_ins, y_ins, ins_val, 2], // x, y, val, insert
-                [x_rep, y_rep, rep_val, 3], // x, y, val, replace
-                [x_del, y_del, del_val, 4], // x, y, val, delete
-            ];
-
-            op_array = self.get_min_ops(ops_array);
+            return map.match_array(&replace);
         }
-        op_array
+
+        let ops: [[i32; 4]; 3] = [
+            map.insert_array(&insert),
+            map.replace_array(&replace),
+            map.delete_array(&delete),
+        ];
+        self.get_min_ops(ops)
+    }
+
+    fn dynamic_operations(&self, x: i32, y: i32, map: &Mapping) -> [i32; 4] {
+        let (_, char1): (usize, char) = map.lookup[0][x as usize];
+        let (_, char2): (usize, char) = map.lookup[1][y as usize];
+
+        let insert: Position = map.insert_position(x, y);
+        let replace: Position = map.replace_position(x, y);
+        let delete: Position = map.delete_position(x, y);
+
+        self.get_operations_array(char1, char2, map, insert, replace, delete)
     }
 }
 
 fn main() {
-    let lev = Levenshtein::new("test", "text");
-    let distance: i32 = lev.distance();
-    let array: Vec<Vec<i32>> = lev.sequence_array();
+    let mut lev = Levenshtein::new();
+    let results = lev.calculate("test", "text");
+    let distance: i32 = results.distance();
+    let array: &Vec<Vec<i32>> = results.sequence();
     println!("Distance: {}", distance);
     println!("Array: {:?}", array);
 }
