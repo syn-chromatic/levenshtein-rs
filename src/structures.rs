@@ -1,3 +1,58 @@
+/// A struct to hold the results of a Levenshtein distance calculation.
+///
+/// This struct contains the Levenshtein distance between two sequences and the sequence of
+/// operations (represented as a matrix of integers) that describe how to transform the first sequence into the second.
+pub struct Results {
+    /// The Levenshtein distance between two sequences.
+    distance: i32,
+    /// The sequence of operations required to transform one sequence into another.
+    /// This is represented as a matrix where each cell contains an operation code.
+    sequence: Vec<Vec<i32>>,
+}
+
+impl Results {
+    pub fn new(distance: i32, sequence: Vec<Vec<i32>>) -> Self {
+        Self { distance, sequence }
+    }
+
+    /// Returns the Levenshtein distance.
+    ///
+    /// This is the minimum number of single-character edits (insertions, deletions, or substitutions)
+    /// required to change one sequence into the other.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `i32` representing the Levenshtein distance.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let results = Results::new(3, vec![vec![0, 1, 2], vec![1, 2, 3]]);
+    /// assert_eq!(results.distance(), 3);
+    /// ```
+    pub fn distance(&self) -> i32 {
+        self.distance
+    }
+
+    /// Returns a reference to the sequence of operations matrix.
+    ///
+    /// Each element in the matrix represents an operation code corresponding to an edit operation.
+    ///
+    /// # Returns
+    ///
+    /// Returns a reference to a `Vec<Vec<i32>>` representing the sequence of operations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let results = Results::new(3, vec![vec![0, 1, 2], vec![1, 2, 3]]);
+    /// assert_eq!(results.sequence(), &vec![vec![0, 1, 2], vec![1, 2, 3]]);
+    /// ```
+    pub fn sequence(&self) -> &Vec<Vec<i32>> {
+        &self.sequence
+    }
+}
+
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -28,7 +83,6 @@ impl Costs {
         }
     }
 
-
     pub fn as_slice(&self) -> [i32; 5] {
         let slice: [i32; 5] = [
             self.on_set,
@@ -38,25 +92,6 @@ impl Costs {
             self.on_delete,
         ];
         slice
-    }
-}
-
-pub struct Results {
-    distance: i32,
-    sequence: Vec<Vec<i32>>,
-}
-
-impl Results {
-    pub fn new(distance: i32, sequence: Vec<Vec<i32>>) -> Self {
-        Self { distance, sequence }
-    }
-
-    pub fn distance(&self) -> i32 {
-        self.distance
-    }
-
-    pub fn sequence(&self) -> &Vec<Vec<i32>> {
-        &self.sequence
     }
 }
 

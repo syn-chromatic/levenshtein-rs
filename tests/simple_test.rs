@@ -1,12 +1,12 @@
 use levenshtein::Levenshtein;
 use levenshtein::Results;
 
-const SEQ1: &str = "test";
-const SEQ2: &str = "text";
+const SEQ1: &str = "some_sequence";
+const SEQ2: &str = "other_sequence";
 
 #[test]
-fn simple_test() {
-    println!("[SIMPLE TEST]");
+fn default_test() {
+    println!("[DEFAULT TEST]");
     let lev: Levenshtein = Levenshtein::new();
     let results: Results = lev.calculate(SEQ1, SEQ2);
     let distance: i32 = results.distance();
@@ -14,6 +14,8 @@ fn simple_test() {
 
     println!("Distance: {}", distance);
     println!("Array: {:?}", array);
+
+    assert!(distance == 4, "calculated distance is incorrect");
 }
 
 #[test]
@@ -28,4 +30,5 @@ fn cost_test() {
 
     println!("Distance: {}", distance);
     println!("Array: {:?}", array);
+    assert!(distance == 5, "calculated distance is incorrect");
 }

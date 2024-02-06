@@ -1,41 +1,110 @@
+//! # Levenshtein Distance Calculator
+//!
+//! `levenshtein` is a library for calculating the Levenshtein distance between two sequences.
+//! It provides customization for the costs of insertion, deletion, and replacement operations.
+
 use crate::structures::Costs;
 use crate::structures::Mapping;
 use crate::structures::Position;
 use crate::structures::Results;
 
+/// A struct for calculating Levenshtein distance.
+///
+/// This struct provides methods to set custom costs for insert, delete, and replace operations
+/// and a method to calculate the Levenshtein distance between two sequences.
 pub struct Levenshtein {
     costs: Costs,
 }
 
 impl Levenshtein {
+    /// Constructs a new `Levenshtein`.
+    ///
+    /// Initializes with default costs for insertion, deletion, and replacement operations.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let levenshtein = Levenshtein::new();
+    /// ```
     pub fn new() -> Levenshtein {
         let costs: Costs = Costs::new();
         Levenshtein { costs }
     }
 
+    /// Sets the cost of an insertion operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `cost` - The cost of an insertion operation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut levenshtein = Levenshtein::new();
+    /// levenshtein.set_insert_cost(2);
+    /// ```
     pub fn set_insert_cost(&mut self, cost: i32) {
         self.costs.on_insert = cost;
     }
 
+    /// Sets the cost of a replacement operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `cost` - The cost of a replacement operation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut levenshtein = Levenshtein::new();
+    /// levenshtein.set_replace_cost(1);
+    /// ```
     pub fn set_replace_cost(&mut self, cost: i32) {
         self.costs.on_replace = cost;
     }
 
+    /// Sets the cost of a deletion operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `cost` - The cost of a deletion operation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut levenshtein = Levenshtein::new();
+    /// levenshtein.set_delete_cost(2);
+    /// ```
     pub fn set_delete_cost(&mut self, cost: i32) {
         self.costs.on_delete = cost;
     }
 
+    /// Calculates the Levenshtein distance between two sequences.
+    ///
+    /// Returns a `Results` struct containing the distance and the sequence of operations.
+    ///
+    /// # Arguments
+    ///
+    /// * `seq1` - The first sequence.
+    /// * `seq2` - The second sequence.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let levenshtein = Levenshtein::new();
+    /// let results = levenshtein.calculate("kitten", "sitting");
+    /// ```
     pub fn calculate(&self, seq1: &str, seq2: &str) -> Results {
-        let ops: Mapping = self.calculate_distance(seq1, seq2);
-        let distance: i32 = ops.distance();
-        let sequence: Vec<Vec<i32>> = ops.sequence;
+        let map: Mapping = self.calculate_map(seq1, seq2);
+        let distance: i32 = map.distance();
+        let sequence: Vec<Vec<i32>> = map.sequence;
         let results: Results = Results::new(distance, sequence);
         results
     }
 }
 
 impl Levenshtein {
-    fn calculate_distance(&self, seq1: &str, seq2: &str) -> Mapping {
+    fn calculate_map(&self, seq1: &str, seq2: &str) -> Mapping {
         let mut map: Mapping = Mapping::new(seq1, seq2);
         let costs: [i32; 5] = self.costs.as_slice();
 
@@ -53,23 +122,18 @@ impl Levenshtein {
     }
 
     fn get_min_ops(&self, ops: [[i32; 4]; 3]) -> [i32; 4] {
-        let mut min_ops: [i32; 4] = [0; 4];
-        let mut min_ops_initialized: bool = false;
+        let mut min_ops: [i32; 4] = ops[0];
 
-        for op in ops.iter() {
+        for op in ops[1..].iter() {
             if op[0] >= 0 && op[1] >= 0 {
-                if !min_ops_initialized {
+                if min_ops[0] < 0 || min_ops[1] < 0 {
                     min_ops = *op;
-                    min_ops_initialized = true;
                 } else if op[2] < min_ops[2] {
                     min_ops = *op;
                 }
             }
         }
 
-        if !min_ops_initialized {
-            panic!("Failed to retrieve Minimum Operation.");
-        }
         min_ops
     }
 
@@ -82,12 +146,9 @@ impl Levenshtein {
         replace: Position,
         delete: Position,
     ) -> [i32; 4] {
-        let onset_state: bool = replace.x + replace.y == -2;
-        let match_state: bool = char1 == char2;
-
-        if onset_state {
+        if replace.x + replace.y == -2 {
             return map.onset_array();
-        } else if match_state {
+        } else if char1 == char2 {
             return map.match_array(&replace);
         }
 
