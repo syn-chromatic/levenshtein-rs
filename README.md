@@ -1,6 +1,10 @@
 ## `⌽` Levenshtein
 Compute operational differences between two sequences using the Levenshtein algorithm. 
 
+#### Add to `Cargo.toml`
+```
+leven-distance = "*"
+```
 
 ___
 ### `➢` Usage:

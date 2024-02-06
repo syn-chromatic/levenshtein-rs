@@ -1,5 +1,5 @@
-use levenshtein::Levenshtein;
-use levenshtein::Results;
+use leven_distance::Levenshtein;
+use leven_distance::Results;
 
 const SEQ1: &str = "some_sequence";
 const SEQ2: &str = "other_sequence";

@@ -1,7 +1,7 @@
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package]
-name = "levenshtein"
+name = "leven-distance"
 description = "Compute operational differences between two sequences using the Levenshtein algorithm."
 repository = "https://github.com/syn-chromatic/levenshtein-rs"
 authors = ["Synchromatic <synchromatic.github@gmail.com>"]
