@@ -2,5 +2,11 @@
 
 [package]
 name = "levenshtein"
-version = "0.1.0"
+description = "Compute operational differences between two sequences using the Levenshtein algorithm."
+repository = "https://github.com/syn-chromatic/levenshtein-rs"
+authors = ["Synchromatic <synchromatic.github@gmail.com>"]
+categories = ["text-processing"]
+keywords = ["levenshtein", "distance", "algorithm"]
+version = "1.0.0"
 edition = "2021"
+license = "MIT"
