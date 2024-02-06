@@ -10,12 +10,19 @@ pub struct Levenshtein {
 impl Levenshtein {
     pub fn new() -> Levenshtein {
         let costs: Costs = Costs::new();
-
         Levenshtein { costs }
     }
 
-    pub fn costs(&mut self) -> &mut Costs {
-        &mut self.costs
+    pub fn set_insert_cost(&mut self, cost: i32) {
+        self.costs.on_insert = cost;
+    }
+
+    pub fn set_replace_cost(&mut self, cost: i32) {
+        self.costs.on_replace = cost;
+    }
+
+    pub fn set_delete_cost(&mut self, cost: i32) {
+        self.costs.on_delete = cost;
     }
 
     pub fn calculate(&self, seq1: &str, seq2: &str) -> Results {

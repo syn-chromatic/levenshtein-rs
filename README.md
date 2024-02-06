@@ -30,7 +30,7 @@ use levenshtein::Results;
 
 fn main() {
     let mut levenshtein: Levenshtein = Levenshtein::new();
-    levenshtein.costs().set_replace(2);
+    levenshtein.set_replace_cost(2);
 
     let results: Results = levenshtein.calculate("test", "text");
 

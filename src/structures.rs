@@ -10,41 +10,24 @@ impl Position {
 }
 
 pub struct Costs {
-    on_set: i32,
-    on_match: i32,
-    on_insert: i32,
-    on_replace: i32,
-    on_delete: i32,
+    pub on_set: i32,
+    pub on_match: i32,
+    pub on_insert: i32,
+    pub on_replace: i32,
+    pub on_delete: i32,
 }
 
 impl Costs {
     pub fn new() -> Self {
-        let on_set: i32 = 0;
-        let on_match: i32 = 0;
-        let on_insert: i32 = 1;
-        let on_replace: i32 = 1;
-        let on_delete: i32 = 1;
-
         Self {
-            on_set,
-            on_match,
-            on_insert,
-            on_replace,
-            on_delete,
+            on_set: 0,
+            on_match: 0,
+            on_insert: 1,
+            on_replace: 1,
+            on_delete: 1,
         }
     }
 
-    pub fn set_insert(&mut self, value: i32) {
-        self.on_insert = value;
-    }
-
-    pub fn set_replace(&mut self, value: i32) {
-        self.on_replace = value;
-    }
-
-    pub fn set_delete(&mut self, value: i32) {
-        self.on_delete = value;
-    }
 
     pub fn as_slice(&self) -> [i32; 5] {
         let slice: [i32; 5] = [
